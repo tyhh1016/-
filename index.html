@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智慧工作台</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22253a;
+      --border: #2e3150;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --text: #e2e8f0;
+      --text-muted: #7c84a3;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 28px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    header .logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-left: auto; }
+
+    /* ── Layout ── */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 24px 28px;
+      flex: 1;
+    }
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .panel-title {
+      font-weight: 600;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-title .icon { font-size: 1.1rem; }
+
+    /* ── Calendar ── */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cal-nav button {
+      background: var(--border);
+      border: none;
+      color: var(--text);
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background .2s;
+    }
+    .cal-nav button:hover { background: var(--accent); }
+    .cal-nav span { font-weight: 600; font-size: 0.95rem; min-width: 100px; text-align: center; }
+
+    .cal-body { padding: 16px; flex: 1; }
+
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 6px;
+    }
+    .cal-weekdays span {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 4px 0;
+      text-transform: uppercase;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .cal-day {
+      min-height: 72px;
+      border-radius: 8px;
+      padding: 5px;
+      cursor: pointer;
+      transition: background .15s;
+      position: relative;
+    }
+    .cal-day:hover { background: var(--surface2); }
+    .cal-day.other-month .day-num { color: var(--text-muted); opacity: .4; }
+    .cal-day.today { background: rgba(108,99,255,.12); border: 1px solid var(--accent); }
+    .cal-day.today .day-num {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .day-num {
+      font-size: 0.78rem;
+      font-weight: 600;
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 3px;
+    }
+
+    .event-dot {
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+    .event-dot.work  { background: rgba(108,99,255,.3); color: #a89cff; }
+    .event-dot.meet  { background: rgba(0,212,170,.2);  color: #00d4aa; }
+    .event-dot.personal { background: rgba(255,107,107,.2); color: #ff9a9a; }
+    .event-dot.remind   { background: rgba(255,193,7,.2);  color: #ffd54f; }
+
+    /* mini agenda below calendar */
+    .agenda {
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .agenda-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 10px 0 6px;
+    }
+    .agenda-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      background: var(--surface2);
+      font-size: 0.83rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .agenda-item:hover { background: var(--border); }
+    .agenda-time { color: var(--text-muted); font-size: 0.75rem; min-width: 38px; }
+    .agenda-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .agenda-dot.work    { background: var(--accent); }
+    .agenda-dot.meet    { background: var(--accent2); }
+    .agenda-dot.personal{ background: var(--accent3); }
+    .agenda-dot.remind  { background: #ffd54f; }
+
+    /* ── Inbox ── */
+    .inbox-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 2px;
+    }
+    .filter-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+    }
+    .filter-chip:hover { border-color: var(--accent); color: var(--text); }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .filter-chip .app-icon { font-size: 0.9rem; }
+    .badge {
+      background: var(--accent3);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      font-weight: 700;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    .msg-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
+    .msg-list::-webkit-scrollbar { width: 5px; }
+    .msg-list::-webkit-scrollbar-track { background: transparent; }
+    .msg-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .msg-card {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background .15s;
+      border: 1px solid transparent;
+    }
+    .msg-card:hover { background: var(--surface2); border-color: var(--border); }
+    .msg-card.unread { border-left: 3px solid var(--accent); }
+    .msg-card.unread .msg-subject { font-weight: 700; }
+
+    .msg-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .msg-content { flex: 1; min-width: 0; }
+    .msg-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+    .msg-sender { font-size: 0.85rem; font-weight: 600; }
+    .msg-time { font-size: 0.7rem; color: var(--text-muted); }
+    .msg-subject { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 3px; }
+    .msg-preview {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      opacity: .7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .msg-app-tag {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    /* App colours */
+    .app-gmail    { background: rgba(234,67,53,.2);  color: #ff7b6e; }
+    .app-slack    { background: rgba(74,144,226,.2); color: #7db3f5; }
+    .app-line     { background: rgba(0,185,0,.2);    color: #4ecb4e; }
+    .app-teams    { background: rgba(98,100,167,.2); color: #adb0ff; }
+    .app-discord  { background: rgba(88,101,242,.2); color: #9ca3ff; }
+
+    .av-gmail   { background: rgba(234,67,53,.3); }
+    .av-slack   { background: rgba(74,144,226,.3); }
+    .av-line    { background: rgba(0,185,0,.3); }
+    .av-teams   { background: rgba(98,100,167,.3); }
+    .av-discord { background: rgba(88,101,242,.3); }
+
+    /* empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .empty-state .big { font-size: 2rem; }
+
+    /* modal overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 360px;
+      max-width: 95vw;
+      box-shadow: var(--shadow);
+    }
+    .modal h3 { margin-bottom: 16px; font-size: 1rem; }
+    .modal label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px; }
+    .modal input, .modal select, .modal textarea {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      outline: none;
+      font-family: inherit;
+    }
+    .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--accent); }
+    .modal textarea { resize: vertical; min-height: 70px; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost { background: var(--surface2); color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡ 智慧工作台</div>
+  <div class="subtitle">行事曆 &amp; 訊息中心</div>
+</header>
+
+<div class="workspace">
+
+  <!-- ══ CALENDAR PANEL ══ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="icon">📅</span> 行事曆
+      </div>
+      <div class="cal-nav">
+        <button id="prevMonth">‹</button>
+        <span id="calTitle"></span>
+        <button id="nextMonth">›</button>
+        <button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:.78rem;" onclick="openAddEvent()">+ 新增</button>
+      </div>
+    </div>
+
+    <div class="cal-body">
+      <div class="cal-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span>
+        <span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div class="agenda">
+      <div class="agenda-title">📋 本月行程</div>
+      <div id="agendaList"></div>
+    </div>
+  </div>
+
+  <!-- ══ INBOX PANEL ══ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="icon">💬</span> 訊息收件匣
+        <span class="badge" id="totalUnread">0</span>
+      </div>
+    </div>
+
+    <div class="inbox-filters">
+      <div>
+        <div class="filter-label">應用程式</div>
+        <div class="filter-row" id="appFilters"></div>
+      </div>
+      <div>
+        <div class="filter-label">發送者</div>
+        <div class="filter-row" id="senderFilters"></div>
+      </div>
+    </div>
+
+    <div class="msg-list" id="msgList"></div>
+  </div>
+
+</div>
+
+<!-- Add Event Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>📌 新增行程</h3>
+    <label>標題</label>
+    <input id="evTitle" type="text" placeholder="例：產品會議" />
+    <label>日期</label>
+    <input id="evDate" type="date" />
+    <label>時間</label>
+    <input id="evTime" type="time" value="09:00" />
+    <label>類型</label>
+    <select id="evType">
+      <option value="work">工作</option>
+      <option value="meet">會議</option>
+      <option value="personal">個人</option>
+      <option value="remind">提醒</option>
+    </select>
+    <label>備註</label>
+    <textarea id="evNote" placeholder="（選填）"></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveEvent()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const today = new Date();
+let calYear = today.getFullYear();
+let calMonth = today.getMonth(); // 0-indexed
+
+// Events store
+let events = autoSeedEvents();
+
+function autoSeedEvents() {
+  const y = today.getFullYear(), m = today.getMonth() + 1;
+  const pad = n => String(n).padStart(2,'0');
+  return [
+    { id:1, title:'每週站立會議',    date:`${y}-${pad(m)}-03`, time:'09:00', type:'meet' },
+    { id:2, title:'Q2 預算審查',     date:`${y}-${pad(m)}-05`, time:'14:00', type:'work' },
+    { id:3, title:'健身房',          date:`${y}-${pad(m)}-06`, time:'07:30', type:'personal' },
+    { id:4, title:'產品規劃討論',    date:`${y}-${pad(m)}-08`, time:'10:00', type:'meet' },
+    { id:5, title:'繳房租提醒',      date:`${y}-${pad(m)}-10`, time:'08:00', type:'remind' },
+    { id:6, title:'程式碼審查',      date:`${y}-${pad(m)}-12`, time:'15:00', type:'work' },
+    { id:7, title:'客戶簡報',        date:`${y}-${pad(m)}-15`, time:'11:00', type:'meet' },
+    { id:8, title:'讀書會',          date:`${y}-${pad(m)}-17`, time:'19:00', type:'personal' },
+    { id:9, title:'系統部署',        date:`${y}-${pad(m)}-20`, time:'22:00', type:'work' },
+    { id:10,title:'季度 OKR 回顧',   date:`${y}-${pad(m)}-22`, time:'14:00', type:'meet' },
+    { id:11,title:'牙醫預約',        date:`${y}-${pad(m)}-24`, time:'10:30', type:'personal' },
+    { id:12,title:'信用卡繳費提醒',  date:`${y}-${pad(m)}-28`, time:'09:00', type:'remind' },
+    // Today
+    { id:13,title:'今日站立會議',    date:`${y}-${pad(m)}-${pad(today.getDate())}`, time:'09:30', type:'meet' },
+    { id:14,title:'下午工作衝刺',    date:`${y}-${pad(m)}-${pad(today.getDate())}`, time:'14:00', type:'work' },
+  ];
+}
+
+// Messages store
+const messages = [
+  { id:1,  app:'gmail',  sender:'林小明',  avatar:'林', subject:'Q2 報告回饋',            preview:'你好，針對你提交的Q2報告，我有幾點建議...', time:'09:41', unread:true  },
+  { id:2,  app:'slack',  sender:'設計團隊', avatar:'設', subject:'#design-review',          preview:'Figma 連結更新了，請大家確認新版 UI...', time:'09:15', unread:true  },
+  { id:3,  app:'gmail',  sender:'客戶 王先生',avatar:'王',subject:'合約修訂事宜',           preview:'感謝您的提案，我們法務已初步審閱...', time:'昨天',  unread:false },
+  { id:4,  app:'line',   sender:'陳小美',  avatar:'陳', subject:'LINE 訊息',                preview:'下週聚餐地點改到信義區了，你方便嗎？', time:'昨天',  unread:true  },
+  { id:5,  app:'teams',  sender:'張工程師', avatar:'張', subject:'Sprint 42 進度',          preview:'本週 Sprint 進度超前，預計提早完成...', time:'週一',  unread:false },
+  { id:6,  app:'discord',sender:'遊戲群組', avatar:'遊', subject:'#gaming-night',           preview:'今晚 22:00 開始，記得上線～', time:'週一',  unread:false },
+  { id:7,  app:'gmail',  sender:'HR 人資部', avatar:'HR',subject:'年度績效考核通知',         preview:'請於本週五前完成 360 度評估問卷...', time:'週日',  unread:true  },
+  { id:8,  app:'slack',  sender:'產品團隊', avatar:'產', subject:'#product-roadmap',        preview:'新功能優先序已調整，詳見 Notion 文件...', time:'週六',  unread:false },
+  { id:9,  app:'line',   sender:'媽媽',    avatar:'媽', subject:'LINE 訊息',                preview:'這週末記得回家吃飯喔！', time:'週五',  unread:false },
+  { id:10, app:'teams',  sender:'專案群組', avatar:'專', subject:'大客戶提案準備',          preview:'週四上午 10 點簡報，請各組確認分工...', time:'週四',  unread:true  },
+  { id:11, app:'gmail',  sender:'AWS 帳單', avatar:'$',  subject:'您的 AWS 帳單',           preview:'2026年3月帳單已產生，總計 $342.18...', time:'3/31',  unread:false },
+  { id:12, app:'discord',sender:'Dev 社群', avatar:'D',  subject:'#announcements',          preview:'v3.0 正式釋出！重大更新包含...', time:'3/30',  unread:false },
+];
+
+// ═══════════════════════════════════════════
+//  CALENDAR
+// ═══════════════════════════════════════════
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  const title = document.getElementById('calTitle');
+
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  title.textContent = `${calYear} 年 ${months[calMonth]}`;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
+
+  grid.innerHTML = '';
+
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+
+    let dayNum, cellDate;
+    if (i < firstDay) {
+      dayNum = daysInPrev - firstDay + i + 1;
+      cellDate = new Date(calYear, calMonth - 1, dayNum);
+      cell.classList.add('other-month');
+    } else if (i >= firstDay + daysInMonth) {
+      dayNum = i - firstDay - daysInMonth + 1;
+      cellDate = new Date(calYear, calMonth + 1, dayNum);
+      cell.classList.add('other-month');
+    } else {
+      dayNum = i - firstDay + 1;
+      cellDate = new Date(calYear, calMonth, dayNum);
+    }
+
+    const todayDate = today.getDate(), todayMonth = today.getMonth(), todayYear = today.getFullYear();
+    if (cellDate.getDate() === todayDate && cellDate.getMonth() === todayMonth && cellDate.getFullYear() === todayYear) {
+      cell.classList.add('today');
+    }
+
+    const numEl = document.createElement('div');
+    numEl.className = 'day-num';
+    numEl.textContent = cellDate.getDate();
+    cell.appendChild(numEl);
+
+    // Attach events
+    const dateStr = formatDate(cellDate);
+    const dayEvents = events.filter(e => e.date === dateStr);
+    dayEvents.slice(0, 2).forEach(ev => {
+      const dot = document.createElement('div');
+      dot.className = `event-dot ${ev.type}`;
+      dot.textContent = ev.title;
+      cell.appendChild(dot);
+    });
+    if (dayEvents.length > 2) {
+      const more = document.createElement('div');
+      more.className = 'event-dot work';
+      more.textContent = `+${dayEvents.length - 2} 更多`;
+      cell.appendChild(more);
+    }
+
+    cell.addEventListener('click', () => openAddEventOnDate(dateStr));
+    grid.appendChild(cell);
+  }
+
+  renderAgenda();
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderAgenda() {
+  const list = document.getElementById('agendaList');
+  const prefix = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  const monthEvents = events.filter(e => e.date.startsWith(prefix))
+    .sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+  if (!monthEvents.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem;padding:8px 0;">本月無行程</div>';
+    return;
+  }
+
+  list.innerHTML = monthEvents.map(ev => {
+    const d = new Date(ev.date + 'T00:00:00');
+    const label = `${d.getMonth()+1}/${d.getDate()} ${ev.time}`;
+    return `
+      <div class="agenda-item">
+        <div class="agenda-dot ${ev.type}"></div>
+        <span class="agenda-time">${label}</span>
+        <span>${ev.title}</span>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('prevMonth').onclick = () => {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+};
+document.getElementById('nextMonth').onclick = () => {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+};
+
+// ═══════════════════════════════════════════
+//  ADD EVENT MODAL
+// ═══════════════════════════════════════════
+function openAddEvent() {
+  document.getElementById('evDate').value = formatDate(today);
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evNote').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function openAddEventOnDate(dateStr) {
+  document.getElementById('evDate').value = dateStr;
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evNote').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+function saveEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  if (!title) { alert('請輸入行程標題'); return; }
+  const ev = {
+    id: Date.now(),
+    title,
+    date: document.getElementById('evDate').value,
+    time: document.getElementById('evTime').value,
+    type: document.getElementById('evType').value,
+  };
+  events.push(ev);
+  events.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  closeModal();
+  renderCalendar();
+}
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// ═══════════════════════════════════════════
+//  INBOX
+// ═══════════════════════════════════════════
+const appMeta = {
+  gmail:   { label:'Gmail',   icon:'📧' },
+  slack:   { label:'Slack',   icon:'💬' },
+  line:    { label:'LINE',    icon:'💚' },
+  teams:   { label:'Teams',   icon:'🔷' },
+  discord: { label:'Discord', icon:'🎮' },
+};
+
+let activeApps = new Set();
+let activeSenders = new Set();
+
+function getUnique(key) {
+  return [...new Set(messages.map(m => m[key]))];
+}
+
+function renderFilters() {
+  // App filters
+  const appRow = document.getElementById('appFilters');
+  const apps = getUnique('app');
+  appRow.innerHTML = apps.map(app => {
+    const meta = appMeta[app] || { label: app, icon:'📱' };
+    const unread = messages.filter(m => m.app === app && m.unread).length;
+    const active = activeApps.has(app) ? 'active' : '';
+    return `<div class="filter-chip ${active}" onclick="toggleApp('${app}')">
+      <span class="app-icon">${meta.icon}</span>${meta.label}
+      ${unread ? `<span class="badge">${unread}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Sender filters
+  const senderRow = document.getElementById('senderFilters');
+  const senders = getUnique('sender');
+  senderRow.innerHTML = senders.map(s => {
+    const active = activeSenders.has(s) ? 'active' : '';
+    return `<div class="filter-chip ${active}" onclick="toggleSender('${s}')">${s}</div>`;
+  }).join('');
+
+  // Total unread
+  document.getElementById('totalUnread').textContent = messages.filter(m => m.unread).length;
+}
+
+function toggleApp(app) {
+  if (activeApps.has(app)) activeApps.delete(app);
+  else activeApps.add(app);
+  renderFilters();
+  renderMessages();
+}
+function toggleSender(s) {
+  if (activeSenders.has(s)) activeSenders.delete(s);
+  else activeSenders.add(s);
+  renderFilters();
+  renderMessages();
+}
+
+function renderMessages() {
+  const list = document.getElementById('msgList');
+  let filtered = [...messages];
+  if (activeApps.size > 0) filtered = filtered.filter(m => activeApps.has(m.app));
+  if (activeSenders.size > 0) filtered = filtered.filter(m => activeSenders.has(m.sender));
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">🔍</div><div>沒有符合條件的訊息</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(m => {
+    const meta = appMeta[m.app] || { label: m.app };
+    return `
+      <div class="msg-card ${m.unread ? 'unread' : ''}" onclick="markRead(${m.id})">
+        <div class="msg-avatar av-${m.app}">${m.avatar}</div>
+        <div class="msg-content">
+          <div class="msg-top">
+            <span class="msg-sender">${m.sender}</span>
+            <span class="msg-time">${m.time}</span>
+          </div>
+          <div class="msg-subject">${m.subject}</div>
+          <div class="msg-preview">${m.preview}</div>
+          <div class="msg-app-tag app-${m.app}">${meta.icon || ''} ${meta.label}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function markRead(id) {
+  const msg = messages.find(m => m.id === id);
+  if (msg) msg.unread = false;
+  renderFilters();
+  renderMessages();
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+renderCalendar();
+renderFilters();
+renderMessages();
+</script>
+</body>
+</html>
