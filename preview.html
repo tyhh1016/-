@@ -8,264 +8,331 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: {} }
-    }
-  </script>
+  <script>tailwind.config = { theme: { extend: {} } }</script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     * { font-family: 'Inter', system-ui, sans-serif; }
-    .animate-ping {
-      animation: ping 1.5s cubic-bezier(0,0,.2,1) infinite;
-    }
-    @keyframes ping {
-      75%, 100% { transform: scale(2); opacity: 0; }
-    }
+    .animate-ping { animation: ping 1.5s cubic-bezier(0,0,.2,1) infinite; }
+    @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    /* ── Inline SVG Icon Components ── */
-    const Icon = ({ d, size = 22, className = '', strokeWidth = 2 }) => (
+    /* ── SVG Icons ── */
+    const Icon = ({ d, size=22, className='', strokeWidth=2 }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
-        className={className}>
-        {[].concat(d).map((path, i) => <path key={i} d={path} />)}
+        fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+        {[].concat(d).map((path,i) => <path key={i} d={path}/>)}
       </svg>
     );
+    const CalendarIcon  = p => <Icon {...p} d={["M8 2v4","M16 2v4","M3 10h18","M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"]}/>;
+    const InboxIcon     = p => <Icon {...p} d={["M22 12h-6l-2 3H10L8 12H2","M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"]}/>;
+    const CheckIcon     = p => <Icon {...p} d="M20 6 9 17l-5-5"/>;
+    const XIcon         = p => <Icon {...p} d={["M18 6 6 18","m6 6 12 12"]}/>;
+    const MsgIcon       = p => <Icon {...p} d={["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"]}/>;
+    const ClockIcon     = p => <Icon {...p} d={["M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z","M12 6v6l4 2"]}/>;
+    const SchoolIcon    = p => <Icon {...p} d={["M22 10v6M2 10l10-5 10 5-10 5z","M6 12v5c3 3 9 3 12 0v-5"]}/>;
+    const SearchIcon    = p => <Icon {...p} d={["M21 21l-4.35-4.35","M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"]}/>;
+    const MoreHorizIcon = p => <Icon {...p} d={["M8 12h.01","M12 12h.01","M16 12h.01"]} strokeWidth={3}/>;
+    const BellIcon      = p => <Icon {...p} d={["M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9","M13.73 21a2 2 0 0 1-3.46 0"]}/>;
+    const BookIcon      = p => <Icon {...p} d={["M4 19.5A2.5 2.5 0 0 1 6.5 17H20","M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"]}/>;
+    const TrophyIcon    = p => <Icon {...p} d={["M6 9H4.5a2.5 2.5 0 0 1 0-5H6","M18 9h1.5a2.5 2.5 0 0 0 0-5H18","M4 22h16","M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22","M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22","M18 2H6v7a6 6 0 0 0 12 0V2z"]}/>;
+    const ChevronRight  = p => <Icon {...p} d="m9 18 6-6-6-6"/>;
+    const MenuIcon      = p => <Icon {...p} d={["M4 6h16","M4 12h16","M4 18h16"]}/>;
+    const CloseIcon     = p => <Icon {...p} d={["M18 6 6 18","m6 6 12 12"]}/>;
 
-    const CalendarIcon   = (p) => <Icon size={p.size} className={p.className} d={["M8 2v4","M16 2v4","M3 10h18","M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"]} />;
-    const InboxIcon      = (p) => <Icon size={p.size} className={p.className} d={["M22 12h-6l-2 3H10L8 12H2","M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"]} />;
-    const CheckIcon      = (p) => <Icon size={p.size} className={p.className} strokeWidth={p.strokeWidth||2} d="M20 6 9 17l-5-5" />;
-    const XIcon          = (p) => <Icon size={p.size} className={p.className} strokeWidth={p.strokeWidth||2} d={["M18 6 6 18","m6 6 12 12"]} />;
-    const MessageSqIcon  = (p) => <Icon size={p.size} className={p.className} d={["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"]} />;
-    const ClockIcon      = (p) => <Icon size={p.size} className={p.className} d={["M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z","M12 6v6l4 2"]} />;
-    const SchoolIcon     = (p) => <Icon size={p.size} className={p.className} d={["M22 10v6M2 10l10-5 10 5-10 5z","M6 12v5c3 3 9 3 12 0v-5"]} />;
-    const SearchIcon     = (p) => <Icon size={p.size} className={p.className} d={["M21 21l-4.35-4.35","M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"]} />;
-    const MoreHorizIcon  = (p) => <Icon size={p.size} className={p.className} d={["M8 12h.01","M12 12h.01","M16 12h.01"]} strokeWidth={3} />;
+    const MESSAGES = [
+      { id:1, app:'Gmail',     sender:'Google Classroom', content:'數學老師發布作業：微積分 P.20，截止：週五 23:59', time:'23:04', status:'pending' },
+      { id:2, app:'Line',      sender:'導師',             content:'明天早自習要進行升學講座，請大家準時。',           time:'22:15', status:'pending' },
+      { id:3, app:'Instagram', sender:'學長',             content:'那本參考書還要用嗎？',                           time:'21:30', status:'read'    },
+      { id:4, app:'X',         sender:'教育廣播',         content:'今日高三學科能力測驗重點整理...',                 time:'19:00', status:'new'     },
+    ];
 
-    /* ── NavItem ── */
-    const NavItem = ({ icon, label, active, onClick }) => (
-      <div onClick={onClick}
-        className={`flex items-center gap-4 px-6 py-4 rounded-2xl cursor-pointer transition-all duration-300
-          ${active ? 'bg-[#7C3AED] text-white shadow-xl shadow-purple-200' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-        {icon}
-        <span className="text-sm font-bold tracking-tight">{label}</span>
-      </div>
-    );
-
-    /* ── StatBox ── */
     const StatBox = ({ icon, label, value, sub }) => (
-      <div className="bg-white p-7 rounded-[35px] shadow-sm border border-slate-50 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 cursor-default group">
-        <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-white group-hover:shadow-md transition-all">{icon}</div>
+      <div className="bg-white p-5 rounded-[28px] shadow-sm border border-slate-50 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 cursor-default group">
+        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-white group-hover:shadow-md transition-all">{icon}</div>
         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-2xl font-black text-slate-800 mb-1">{value}</p>
+        <p className="text-xl font-black text-slate-800 mb-1">{value}</p>
         <p className="text-[10px] text-slate-400 font-medium">{sub}</p>
       </div>
     );
 
-    /* ── Main App ── */
+    const NavItem = ({ icon, label, active, onClick, collapsed }) => (
+      <div onClick={onClick} className={`flex items-center gap-4 px-3 py-4 rounded-2xl cursor-pointer transition-all duration-200 ${active?'bg-[#7C3AED] text-white shadow-xl shadow-purple-200':'text-slate-400 hover:bg-slate-50 hover:text-slate-600'} ${collapsed?'justify-center':''}`}>
+        <span className="shrink-0">{icon}</span>
+        {!collapsed && <span className="text-sm font-bold tracking-tight whitespace-nowrap">{label}</span>}
+      </div>
+    );
+
+    /* ── Dashboard ── */
+    const DashboardView = ({ dismissed, onDismiss }) => {
+      const visiblePending = MESSAGES.filter(m => m.status==='pending' && !dismissed.has(m.id));
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <StatBox icon={<ClockIcon size={22} className="text-blue-500"/>}    label="今日課表"  value="6 堂"  sub="下一堂：物理 (14:00)"/>
+            <StatBox icon={<MsgIcon   size={22} className="text-purple-500"/>}  label="社交訊息"  value="12 則" sub="3 則來自 Line 重要聯繫"/>
+            <StatBox icon={<CalendarIcon size={22} className="text-orange-500"/>} label="待辦作業" value="2 件"  sub="微積分習題即將截止"/>
+            <StatBox icon={<SchoolIcon size={22} className="text-emerald-500"/>} label="升學資訊"  value="1 則"  sub="校網升學公告更新"/>
+          </div>
+          <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-100/50">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-black text-slate-800">智慧行事曆</h2>
+              <div className="flex gap-2">
+                <button className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[11px] font-bold">週</button>
+                <button className="px-3 py-1.5 bg-slate-50 text-slate-400 rounded-lg text-[11px] font-bold">月</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5 border-t border-slate-50 pt-5">
+              {['M','T','W','T','F','S','S'].map((day,i) => (
+                <div key={i} className="space-y-2">
+                  <p className={`text-center text-[10px] font-black ${i===2?'text-purple-600':'text-slate-300'}`}>{day}</p>
+                  <div className={`h-28 rounded-xl border-2 ${i===2?'bg-purple-50/30 border-purple-100':'bg-slate-50/50 border-transparent'} relative p-1`}>
+                    {i===2 && <div className="bg-white p-1.5 rounded-lg border-l-2 border-purple-500 text-[8px] font-bold text-slate-700">升學專題</div>}
+                    {i===4 && <div className="bg-white p-1.5 rounded-lg border-l-2 border-orange-400 text-[8px] font-bold text-slate-700">微積分截止</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-slate-800">待審核擬稿</h2>
+              <MoreHorizIcon size={18} className="text-slate-300"/>
+            </div>
+            {visiblePending.map(msg => (
+              <div key={msg.id} className="bg-white p-5 rounded-[24px] shadow-lg shadow-slate-200/40 border border-white hover:border-purple-100 transition-all mb-4">
+                <div className="flex justify-between mb-3">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${msg.app==='Gmail'?'bg-red-50 text-red-500':'bg-green-50 text-green-600'}`}>{msg.app} 偵測</span>
+                  <span className="text-[10px] font-bold text-slate-300">{msg.time}</span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-widest">{msg.sender}</p>
+                <p className="text-sm font-bold text-slate-700 leading-relaxed italic mb-4">「{msg.content}」</p>
+                <div className="flex gap-3">
+                  <button onClick={()=>onDismiss(msg.id)} className="flex-1 bg-emerald-500 text-white py-3 rounded-xl flex items-center justify-center hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all active:scale-95"><CheckIcon size={20} strokeWidth={3}/></button>
+                  <button onClick={()=>onDismiss(msg.id)} className="flex-1 bg-slate-50 text-slate-400 py-3 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-all active:scale-95"><XIcon size={20} strokeWidth={3}/></button>
+                </div>
+              </div>
+            ))}
+            {visiblePending.length===0 && <div className="bg-white p-8 rounded-[24px] shadow-sm text-center"><p className="text-3xl mb-2">✅</p><p className="text-sm font-bold text-slate-400">所有擬稿已確認</p></div>}
+          </div>
+        </div>
+      );
+    };
+
+    /* ── Inbox ── */
+    const InboxView = () => {
+      const [filter, setFilter] = useState('all');
+      const appColors = { Gmail:'bg-red-50 text-red-500', Line:'bg-green-50 text-green-600', Instagram:'bg-pink-50 text-pink-500', X:'bg-slate-100 text-slate-600' };
+      const filtered = filter==='all' ? MESSAGES : MESSAGES.filter(m => m.status===filter);
+      return (
+        <div className="space-y-5">
+          <h2 className="text-2xl font-black text-slate-800">訊息收件匣</h2>
+          <div className="flex gap-2 flex-wrap">
+            {[['all','全部'],['pending','待確認'],['new','最新'],['read','已讀']].map(([val,label]) => (
+              <button key={val} onClick={()=>setFilter(val)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filter===val?'bg-[#7C3AED] text-white shadow-lg shadow-purple-200':'bg-white text-slate-400 hover:bg-slate-50'}`}>{label}</button>
+            ))}
+          </div>
+          <div className="bg-white rounded-[28px] overflow-hidden shadow-sm border border-slate-100/50">
+            {filtered.map((msg,i) => (
+              <div key={msg.id} className={`flex items-start gap-4 px-5 py-5 hover:bg-slate-50 transition-colors cursor-pointer ${i!==filtered.length-1?'border-b border-slate-50':''}`}>
+                <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-500 shrink-0 text-sm">{msg.app[0]}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1 gap-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <p className="text-sm font-black text-slate-800 truncate">{msg.sender}</p>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 ${appColors[msg.app]??'bg-slate-100 text-slate-500'}`}>{msg.app}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-300 font-bold shrink-0">{msg.time}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {filtered.length===0 && <div className="py-12 text-center text-slate-400 text-sm font-bold">此分類沒有訊息</div>}
+          </div>
+        </div>
+      );
+    };
+
+    /* ── School ── */
+    const SchoolView = () => {
+      const news = [
+        { icon:<TrophyIcon size={18} className="text-yellow-500"/>, tag:'升學公告', title:'113 學年度學科能力測驗報名開始', date:'04/01', desc:'報名截止日為 4 月 30 日，請同學盡早完成線上報名。', color:'bg-yellow-50 border-yellow-100' },
+        { icon:<BookIcon   size={18} className="text-blue-500"/>,   tag:'課業資源', title:'數學輔導課表 — 第二學期更新',   date:'03/28', desc:'每週二、四 16:00–18:00，於 302 教室，歡迎自由參加。', color:'bg-blue-50 border-blue-100' },
+        { icon:<BellIcon   size={18} className="text-purple-500"/>, tag:'校內公告', title:'升學博覽會：4/15 於體育館',     date:'03/25', desc:'全台 50 所大學設攤，提供系所介紹與備審資料諮詢。',    color:'bg-purple-50 border-purple-100' },
+        { icon:<SchoolIcon size={18} className="text-emerald-500"/>,tag:'志願填寫', title:'繁星推薦志願填寫說明會',         date:'03/20', desc:'時間：4/5 上午 10 點，地點：演講廳，出席請簽到。',    color:'bg-emerald-50 border-emerald-100' },
+      ];
+      const deadlines = [
+        { label:'微積分作業',   due:'週五 23:59', urgent:true  },
+        { label:'學測報名截止', due:'04/30',       urgent:false },
+        { label:'繁星推薦截止', due:'05/10',       urgent:false },
+        { label:'指考報名截止', due:'06/01',       urgent:false },
+      ];
+      return (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-black text-slate-800">校園公告 &amp; 升學資訊</h2>
+          {news.map((n,i) => (
+            <div key={i} className={`bg-white p-5 rounded-[24px] border ${n.color} hover:shadow-lg transition-all cursor-pointer group`}>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">{n.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{n.tag}</span>
+                    <span className="text-[10px] font-bold text-slate-300">{n.date}</span>
+                  </div>
+                  <p className="text-sm font-black text-slate-800 mb-1 group-hover:text-purple-700 transition-colors">{n.title}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">{n.desc}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100/50">
+            <h3 className="text-sm font-black text-slate-700 mb-4">重要截止日期</h3>
+            {deadlines.map((d,i) => (
+              <div key={i} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${d.urgent?'bg-red-400':'bg-slate-200'}`}></div>
+                  <p className="text-sm font-bold text-slate-700">{d.label}</p>
+                </div>
+                <span className={`text-xs font-black px-3 py-1 rounded-full ${d.urgent?'bg-red-50 text-red-500':'bg-slate-50 text-slate-400'}`}>{d.due}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bg-gradient-to-br from-purple-600 to-indigo-600 p-6 rounded-[24px] text-white">
+            <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-purple-200">學測倒數</p>
+            <p className="text-4xl font-black mb-1">87 天</p>
+            <p className="text-xs text-purple-200">距離 114 學年度學科能力測驗</p>
+          </div>
+        </div>
+      );
+    };
+
+    /* ── App ── */
     const App = () => {
-      const [activeTab, setActiveTab] = useState('dashboard');
-      const [messages, setMessages] = useState([]);
+      const [activeTab, setActiveTab]           = useState('dashboard');
+      const [dismissed, setDismissed]           = useState(new Set());
+      const [sidebarOpen, setSidebarOpen]       = useState(false);
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-      useEffect(() => {
-        if ("Notification" in window) Notification.requestPermission();
-        setMessages([
-          { id: 1, app: 'Gmail', sender: 'Google Classroom', content: '數學老師發布作業：微積分 P.20，截止：週五 23:59', time: '23:04', status: 'pending' },
-          { id: 2, app: 'Line',  sender: '導師',             content: '明天早自習要進行升學講座，請大家準時。',           time: '22:15', status: 'pending' },
-          { id: 3, app: 'Instagram', sender: '學長',         content: '那本參考書還要用嗎？',                           time: '21:30', status: 'read'    },
-          { id: 4, app: 'X',    sender: '教育廣播',          content: '今日高三學科能力測驗重點整理...',                 time: '19:00', status: 'new'     },
-        ]);
-      }, []);
+      useEffect(() => { if ("Notification" in window) Notification.requestPermission(); }, []);
 
+      const handleTabChange = tab => { setActiveTab(tab); setSidebarOpen(false); };
       const sendPush = (title, body) => {
-        if (Notification.permission === "granted") {
-          new Notification(title, { body });
-        } else {
-          alert("請開啟瀏覽器通知權限以模擬手機訊息列效果");
-        }
+        if (Notification.permission==='granted') new Notification(title, { body });
+        else alert('請開啟瀏覽器通知權限以模擬手機訊息列效果');
       };
-
-      const pending = messages.filter(m => m.status === 'pending');
-
-      const [dismissed, setDismissed] = useState(new Set());
-      const dismiss = (id) => setDismissed(prev => new Set([...prev, id]));
-      const visiblePending = pending.filter(m => !dismissed.has(m.id));
+      const dismiss = id => setDismissed(prev => new Set([...prev, id]));
+      const pendingCount = MESSAGES.filter(m => m.status==='pending' && !dismissed.has(m.id)).length;
 
       return (
         <div className="flex h-screen bg-[#F4F7FE] text-slate-800 antialiased overflow-hidden">
 
-          {/* ── Sidebar ── */}
-          <aside className="w-72 bg-white border-r border-slate-200 flex flex-col p-8 shrink-0">
-            <div className="flex items-center gap-3 mb-12">
-              <div className="w-11 h-11 bg-[#7C3AED] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-purple-200 font-black text-xl select-none">S</div>
-              <h1 className="font-extrabold text-2xl tracking-tight text-slate-800">SmartHub</h1>
-            </div>
+          {/* Mobile backdrop */}
+          {sidebarOpen && (
+            <div className="fixed inset-0 bg-black/40 z-20" onClick={()=>setSidebarOpen(false)}
+              style={{display: window.innerWidth < 768 ? 'block' : 'none'}}/>
+          )}
 
-            <nav className="space-y-2 flex-1">
-              <NavItem icon={<CalendarIcon size={22}/>}  label="總覽儀表板"   active={activeTab==='dashboard'} onClick={()=>setActiveTab('dashboard')} />
-              <NavItem icon={<InboxIcon size={22}/>}     label="訊息收件匣"   active={activeTab==='inbox'}     onClick={()=>setActiveTab('inbox')} />
-              <NavItem icon={<SchoolIcon size={22}/>}    label="校園/升學資訊" active={activeTab==='school'}    onClick={()=>setActiveTab('school')} />
-            </nav>
-
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-[24px] border border-purple-100 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Pending</span>
-                <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></div>
-              </div>
-              <p className="text-2xl font-black text-slate-800 mb-1">{visiblePending.length}</p>
-              <p className="text-xs text-slate-500 font-medium mb-4">待確認的行程擬稿</p>
-              <button
-                onClick={()=>sendPush("新行程擬稿確認","偵測到來自 Google Classroom 的截止日期，已為您擬好行程。")}
-                className="w-full bg-white text-purple-600 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-95"
-              >
-                測試手機通知
+          {/* Sidebar */}
+          <aside style={{
+            width: sidebarCollapsed ? '72px' : '288px',
+            transform: sidebarOpen || window.innerWidth >= 768 ? 'translateX(0)' : 'translateX(-100%)',
+            position: window.innerWidth < 768 ? 'fixed' : 'relative',
+            zIndex: 30,
+            height: '100%',
+            background: 'white',
+            borderRight: '1px solid #e2e8f0',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '2rem 1.5rem',
+            transition: 'all 0.3s ease',
+            flexShrink: 0,
+          }}>
+            {/* Logo row */}
+            <div style={{display:'flex', alignItems:'center', marginBottom:'2.5rem', justifyContent: sidebarCollapsed ? 'center' : 'space-between'}}>
+              {!sidebarCollapsed && (
+                <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                  <div style={{width:'44px',height:'44px',background:'#7C3AED',borderRadius:'14px',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:900,fontSize:'1.25rem',flexShrink:0}}>S</div>
+                  <h1 style={{fontWeight:800,fontSize:'1.5rem',letterSpacing:'-0.02em',color:'#1e293b',whiteSpace:'nowrap'}}>SmartHub</h1>
+                </div>
+              )}
+              {sidebarCollapsed && (
+                <div style={{width:'44px',height:'44px',background:'#7C3AED',borderRadius:'14px',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:900,fontSize:'1.25rem'}}>S</div>
+              )}
+              {/* Desktop collapse / Mobile close */}
+              <button onClick={()=> window.innerWidth < 768 ? setSidebarOpen(false) : setSidebarCollapsed(c=>!c)}
+                style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'10px',border:'none',background:'transparent',cursor:'pointer',color:'#94a3b8',flexShrink:0}}>
+                <MenuIcon size={18}/>
               </button>
             </div>
+
+            {/* Nav */}
+            <nav style={{display:'flex',flexDirection:'column',gap:'6px',flex:1}}>
+              <NavItem icon={<CalendarIcon size={22}/>} label="總覽儀表板"    active={activeTab==='dashboard'} onClick={()=>handleTabChange('dashboard')} collapsed={sidebarCollapsed}/>
+              <NavItem icon={<InboxIcon    size={22}/>} label="訊息收件匣"    active={activeTab==='inbox'}     onClick={()=>handleTabChange('inbox')}     collapsed={sidebarCollapsed}/>
+              <NavItem icon={<SchoolIcon   size={22}/>} label="校園/升學資訊" active={activeTab==='school'}    onClick={()=>handleTabChange('school')}    collapsed={sidebarCollapsed}/>
+            </nav>
+
+            {/* Pending card */}
+            {!sidebarCollapsed ? (
+              <div style={{background:'linear-gradient(135deg,#f5f3ff,#eef2ff)',padding:'1.25rem',borderRadius:'20px',border:'1px solid #e0d7ff'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}}>
+                  <span style={{fontSize:'10px',fontWeight:900,color:'#7c3aed',textTransform:'uppercase',letterSpacing:'0.08em'}}>Pending</span>
+                  <div className="animate-ping" style={{width:'8px',height:'8px',background:'#a855f7',borderRadius:'50%'}}></div>
+                </div>
+                <p style={{fontSize:'1.5rem',fontWeight:900,color:'#1e293b',marginBottom:'4px'}}>{pendingCount}</p>
+                <p style={{fontSize:'12px',color:'#64748b',marginBottom:'16px'}}>待確認的行程擬稿</p>
+                <button onClick={()=>sendPush('新行程擬稿確認','偵測到來自 Google Classroom 的截止日期，已為您擬好行程。')}
+                  style={{width:'100%',background:'white',color:'#7c3aed',padding:'8px',borderRadius:'12px',fontSize:'12px',fontWeight:700,border:'none',cursor:'pointer',boxShadow:'0 1px 4px rgba(0,0,0,.08)'}}>
+                  測試手機通知
+                </button>
+              </div>
+            ) : (
+              <div style={{display:'flex',justifyContent:'center',paddingBottom:'8px',position:'relative'}}>
+                <div style={{width:'40px',height:'40px',background:'#f5f3ff',borderRadius:'14px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <BellIcon size={18} className="text-purple-500"/>
+                </div>
+                {pendingCount>0 && (
+                  <span style={{position:'absolute',top:'-4px',right:'8px',width:'20px',height:'20px',background:'#7c3aed',color:'white',fontSize:'10px',fontWeight:900,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>{pendingCount}</span>
+                )}
+              </div>
+            )}
           </aside>
 
-          {/* ── Main Content ── */}
+          {/* Main */}
           <main className="flex-1 flex flex-col min-w-0">
+            <header style={{height:'72px',padding:'0 1.5rem',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'16px',flexShrink:0}}>
+              {/* Hamburger for mobile / also serves as collapse on desktop when sidebar is hidden */}
+              <button onClick={()=>setSidebarOpen(true)}
+                style={{width:'40px',height:'40px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'14px',background:'white',border:'1px solid #e2e8f0',color:'#475569',cursor:'pointer',flexShrink:0}}>
+                <MenuIcon size={20}/>
+              </button>
 
-            {/* Header */}
-            <header className="h-24 px-10 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-4 bg-white/60 backdrop-blur-md px-6 py-3 rounded-2xl w-[450px] shadow-sm border border-white">
-                <SearchIcon size={18} className="text-slate-400" />
-                <input type="text" placeholder="搜尋訊息、課程或升學資訊..."
-                  className="bg-transparent border-none focus:outline-none text-sm w-full font-medium" />
+              <div style={{display:'flex',alignItems:'center',gap:'10px',background:'rgba(255,255,255,.6)',backdropFilter:'blur(12px)',padding:'10px 16px',borderRadius:'16px',flex:1,maxWidth:'450px',border:'1px solid white',boxShadow:'0 1px 6px rgba(0,0,0,.06)'}}>
+                <SearchIcon size={17} className="text-slate-400" style={{flexShrink:0}}/>
+                <input type="text" placeholder="搜尋訊息、課程或升學資訊..." style={{background:'transparent',border:'none',outline:'none',fontSize:'14px',width:'100%',minWidth:0}}/>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-bold text-slate-700">高三專注模式</span>
-                  <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
-                    <span className="inline-block w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Google Sheet 已對接
-                  </span>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#7C3AED] to-[#A855F7] p-0.5 shadow-lg shadow-purple-100">
-                  <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center font-bold text-purple-600 text-xs">User</div>
-                </div>
+
+              <div style={{width:'40px',height:'40px',borderRadius:'14px',background:'linear-gradient(135deg,#7C3AED,#A855F7)',padding:'2px',boxShadow:'0 4px 12px rgba(124,58,237,.25)',flexShrink:0}}>
+                <div style={{width:'100%',height:'100%',borderRadius:'11px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#7c3aed',fontSize:'11px'}}>User</div>
               </div>
             </header>
 
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-10 pb-10 space-y-8">
-
-              {/* Stats */}
-              <div className="grid grid-cols-4 gap-6">
-                <StatBox icon={<ClockIcon size={24} className="text-blue-500"/>}    label="今日課表"  value="6 堂"  sub="下一堂：物理 (14:00)" />
-                <StatBox icon={<MessageSqIcon size={24} className="text-purple-500"/>} label="社交訊息" value="12 則" sub="3 則來自 Line 重要聯繫" />
-                <StatBox icon={<CalendarIcon size={24} className="text-orange-500"/>}  label="待辦作業" value="2 件"  sub="微積分習題即將截止" />
-                <StatBox icon={<SchoolIcon size={24} className="text-emerald-500"/>}   label="升學資訊" value="1 則"  sub="校網升學公告更新" />
-              </div>
-
-              <div className="grid grid-cols-12 gap-8">
-
-                {/* Calendar (8 cols) */}
-                <div className="col-span-8 bg-white rounded-[40px] p-10 shadow-sm border border-slate-100/50">
-                  <div className="flex justify-between items-center mb-10">
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">智慧行事曆</h2>
-                    <div className="flex gap-2">
-                      <button className="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">週檢視</button>
-                      <button className="px-5 py-2 bg-slate-50 text-slate-400 rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors">月檢視</button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-4 border-t border-slate-50 pt-8">
-                    {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day, i) => (
-                      <div key={day} className="space-y-4">
-                        <p className={`text-center text-[11px] font-black tracking-tighter uppercase ${i===2 ? 'text-purple-600' : 'text-slate-300'}`}>{day}</p>
-                        <div className={`h-64 rounded-3xl border-2 ${i===2 ? 'bg-purple-50/30 border-purple-100' : 'bg-slate-50/50 border-transparent'} transition-all relative p-2`}>
-                          {i===2 && (
-                            <div className="bg-white p-3 rounded-2xl shadow-sm border-l-4 border-purple-500 text-[10px] font-bold text-slate-700">
-                              討論升學專題
-                              <p className="text-[9px] text-slate-400 font-normal mt-1">14:00 - 圖書館</p>
-                            </div>
-                          )}
-                          {i===4 && (
-                            <div className="bg-white p-3 rounded-2xl shadow-sm border-l-4 border-orange-400 text-[10px] font-bold text-slate-700">
-                              微積分截止
-                              <p className="text-[9px] text-slate-400 font-normal mt-1">23:59 - 線上繳交</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Draft review (4 cols) */}
-                <div className="col-span-4 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-black text-slate-800">待審核擬稿</h2>
-                    <MoreHorizIcon className="text-slate-300" size={20} />
-                  </div>
-
-                  {visiblePending.map(msg => (
-                    <div key={msg.id} className="bg-white p-6 rounded-[32px] shadow-xl shadow-slate-200/40 border border-white hover:border-purple-100 transition-all">
-                      <div className="flex justify-between mb-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${msg.app==='Gmail' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
-                          {msg.app} 偵測
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-300">{msg.time}</span>
-                      </div>
-                      <div className="mb-4">
-                        <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-widest">{msg.sender}</p>
-                        <p className="text-sm font-bold text-slate-700 leading-relaxed italic">「{msg.content}」</p>
-                      </div>
-                      <div className="flex gap-3">
-                        <button onClick={()=>dismiss(msg.id)}
-                          className="flex-1 bg-emerald-500 text-white py-3.5 rounded-2xl flex items-center justify-center hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all active:scale-95">
-                          <CheckIcon size={22} strokeWidth={3} />
-                        </button>
-                        <button onClick={()=>dismiss(msg.id)}
-                          className="flex-1 bg-slate-50 text-slate-400 py-3.5 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all active:scale-95">
-                          <XIcon size={22} strokeWidth={3} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {visiblePending.length === 0 && (
-                    <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-50 text-center">
-                      <p className="text-3xl mb-2">✅</p>
-                      <p className="text-sm font-bold text-slate-400">所有擬稿已確認</p>
-                    </div>
-                  )}
-
-                  {/* Message stream */}
-                  <div className="pt-4 p-2">
-                    <h3 className="text-xs font-black text-slate-300 uppercase tracking-widest mb-6">今日訊息流</h3>
-                    <div className="space-y-5">
-                      {messages.slice(2, 4).map(m => (
-                        <div key={m.id} className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm font-bold text-xs shrink-0">{m.app[0]}</div>
-                          <div className="flex-1 min-w-0 border-b border-slate-50 pb-4">
-                            <div className="flex justify-between mb-1">
-                              <p className="text-xs font-black text-slate-700">{m.sender}</p>
-                              <span className="text-[9px] text-slate-300 font-bold">{m.time}</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 truncate">{m.content}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+            <div className="flex-1 overflow-y-auto" style={{padding:'0 1.25rem 2.5rem'}}>
+              {activeTab==='dashboard' && <DashboardView dismissed={dismissed} onDismiss={dismiss}/>}
+              {activeTab==='inbox'     && <InboxView/>}
+              {activeTab==='school'    && <SchoolView/>}
             </div>
           </main>
         </div>
       );
     };
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
   </script>
 </body>
 </html>
