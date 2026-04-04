@@ -1,0 +1,57 @@
+name: Deploy SmartPlannerHub to GitHub Pages
+
+on:
+  push:
+    branches: [main]          # 推上 main 分支時自動觸發
+  workflow_dispatch:           # 也可在 GitHub Actions 頁面手動觸發
+
+# GitHub Pages 部署需要這三個權限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時只允許一個部署執行，新的推送會取消上一個尚未完成的部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # 從 GitHub Secrets 注入環境變數（Settings → Secrets and variables → Actions）
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_SHEET_ID: ${{ secrets.VITE_SHEET_ID }}
+          VITE_SCHOOL_URL: ${{ secrets.VITE_SCHOOL_URL }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

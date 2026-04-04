@@ -1,35 +1,88 @@
 /**
- * Gmail API v1
- * 抓取來自 Google Classroom 及學校相關的郵件
+ * Gmail API v1 — 直接讀取收件匣郵件
+ * 每則郵件回傳：寄件者、主旨、內文預覽（snippet，約 200 字）、gmailId（供懶載完整內文）
  */
 
-// 搜尋條件：Google Classroom 通知 或 含作業/截止相關關鍵字的郵件
-const QUERY = [
-  'from:classroom.google.com',
-  'from:noreply-driveshare@google.com',
-  'subject:作業',
-  'subject:截止',
-  'subject:繳交',
-  'subject:課程',
-  'subject:公告',
-].join(' OR ');
+// ── 工具函式 ──────────────────────────────────────────────
 
+/** 將 base64url 解碼為 UTF-8 字串 */
+const decodeBase64Url = (data) => {
+  try {
+    const binary = atob(data.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes  = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch { return ''; }
+};
+
+/** 將 HTML 轉為可讀純文字 */
+const stripHtml = (html) =>
+  html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+/** 遞迴從 MIME payload 提取純文字（優先 text/plain，次選 text/html → 去 HTML 標籤） */
+const extractText = (payload) => {
+  if (!payload) return '';
+  if (payload.mimeType === 'text/plain' && payload.body?.data)
+    return decodeBase64Url(payload.body.data);
+  if (payload.mimeType === 'text/html' && payload.body?.data)
+    return stripHtml(decodeBase64Url(payload.body.data));
+  if (payload.parts) {
+    const plain = payload.parts.find(p => p.mimeType === 'text/plain');
+    if (plain?.body?.data) return decodeBase64Url(plain.body.data);
+    const html  = payload.parts.find(p => p.mimeType === 'text/html');
+    if (html?.body?.data)  return stripHtml(decodeBase64Url(html.body.data));
+    for (const part of payload.parts) {
+      const t = extractText(part);
+      if (t) return t;
+    }
+  }
+  return '';
+};
+
+const parseSenderName = (from) => {
+  const match = from.match(/^"?([^"<]+)"?\s*</);
+  return (match?.[1] ?? from).trim();
+};
+
+const formatDate = (dateStr) => {
+  try {
+    const d = new Date(dateStr);
+    if (Date.now() - d.getTime() < 86_400_000)
+      return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  } catch { return ''; }
+};
+
+// ── 主要匯出 ─────────────────────────────────────────────
+
+/**
+ * 抓取收件匣最新 25 封郵件（metadata + snippet）
+ * 不抓完整內文 → 速度快，供列表顯示用
+ */
 export const fetchGmailMessages = async (token) => {
-  // 1. 取得訊息 ID 清單
   const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=15&q=${encodeURIComponent(QUERY)}`,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=${encodeURIComponent('in:inbox')}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
-
   if (listRes.status === 401) throw new Error('TOKEN_EXPIRED');
   if (!listRes.ok) throw new Error(`Gmail list ${listRes.status}`);
 
   const { messages = [] } = await listRes.json();
   if (!messages.length) return [];
 
-  // 2. 批次取得標頭（Subject / From / Date）
+  // 批次取得標頭 + snippet（format=metadata 已包含 Message.snippet 欄位）
   const details = await Promise.all(
-    messages.slice(0, 10).map(({ id }) =>
+    messages.map(({ id }) =>
       fetch(
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}` +
         `?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
@@ -41,36 +94,36 @@ export const fetchGmailMessages = async (token) => {
   return details
     .filter(d => d.id)
     .map(detail => {
-      const h    = detail.payload?.headers || [];
-      const get  = name => h.find(x => x.name === name)?.value ?? '';
-      const from = get('From');
-
+      const h       = detail.payload?.headers || [];
+      const get     = name => h.find(x => x.name === name)?.value ?? '';
+      const rawDate = get('Date');
+      // snippet 已是解碼後純文字，僅含部分 HTML 實體 → 簡單清理
+      const preview = (detail.snippet || '').replace(/&#\d+;|&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
       return {
-        id:      `gmail_${detail.id}`,
-        app:     'Gmail',
-        sender:  parseSenderName(from),
-        content: get('Subject') || '（無主旨）',
-        time:    formatDate(get('Date')),
-        status:  detail.labelIds?.includes('UNREAD') ? 'new' : 'read',
-        source:  'gmail',
+        id:          `gmail_${detail.id}`,
+        gmailId:     detail.id,      // 原始 Gmail ID，供 fetchGmailBody 懶載入使用
+        app:         'Gmail',
+        sender:      parseSenderName(get('From')),
+        content:     get('Subject') || '（無主旨）',
+        bodyPreview: preview,        // 列表顯示用預覽（約 200 字）
+        time:        formatDate(rawDate),
+        ts:          new Date(rawDate).getTime() || 0,
+        status:      detail.labelIds?.includes('UNREAD') ? 'new' : 'read',
+        source:      'gmail',
       };
     });
 };
 
-const parseSenderName = (from) => {
-  const match = from.match(/^"?([^"<]+)"?\s*</);
-  return (match?.[1] ?? from).trim();
-};
-
-const formatDate = (dateStr) => {
-  try {
-    const d = new Date(dateStr);
-    const diffMs = Date.now() - d.getTime();
-    if (diffMs < 86_400_000) {
-      return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-    }
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  } catch {
-    return '';
-  }
+/**
+ * 懶載入完整郵件內文（點擊後才呼叫，避免批次抓大量郵件正文拖慢速度）
+ */
+export const fetchGmailBody = async (token, gmailId) => {
+  const res = await fetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${gmailId}?format=full`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (res.status === 401) throw new Error('TOKEN_EXPIRED');
+  if (!res.ok) throw new Error(`Gmail body ${res.status}`);
+  const msg = await res.json();
+  return extractText(msg.payload) || msg.snippet || '';
 };
