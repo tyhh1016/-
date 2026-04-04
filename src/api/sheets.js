@@ -59,10 +59,14 @@ export const fetchSheetMessages = async (token, sheetId) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (res.status === 401) throw new Error('TOKEN_EXPIRED');
-  if (res.status === 403) throw new Error('Sheets API 403：請確認 Google Sheets 已分享給此帳號，或試算表 ID 正確');
-  if (res.status === 404) throw new Error('Sheets API 404：試算表 ID 不正確或試算表已被刪除');
-  if (!res.ok) throw new Error(`Sheets API ${res.status}`);
+  // 除錯：印出請求結果（確認 token 和 sheetId 是否正確傳入）
+  console.log('[Sheets] 請求狀態:', res.status, '| sheetId:', sheetId, '| token 前12字:', token?.slice(0, 12) + '…');
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    console.error('[Sheets] 錯誤回應:', JSON.stringify(body));
+    if (res.status === 401) throw new Error('TOKEN_EXPIRED');
+    throw new Error(`Sheets API ${res.status}：${body?.error?.message || '未知錯誤'}`);
+  }
 
   const { values = [] } = await res.json();
 
