@@ -65,13 +65,25 @@ const formatDate = (dateStr) => {
 
 // ── 主要匯出 ─────────────────────────────────────────────
 
+// 排除的寄件者 domain / 地址（自動化通知、系統郵件）
+// Gmail API 的 -from: 語法：在 q 參數中加 -from:domain 即可排除
+const EXCLUDED_SENDERS = [
+  'notifications@github.com',
+  'noreply@github.com',
+  'no-reply@accounts.google.com',
+  'no-reply@google.com',
+  'googleplay-noreply@google.com',
+].map(s => `-from:${s}`).join(' ');
+
+const GMAIL_QUERY = `in:inbox ${EXCLUDED_SENDERS}`;
+
 /**
- * 抓取收件匣最新 25 封郵件（metadata + snippet）
+ * 抓取收件匣最新 25 封郵件（metadata + snippet），排除系統通知
  * 不抓完整內文 → 速度快，供列表顯示用
  */
 export const fetchGmailMessages = async (token) => {
   const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=${encodeURIComponent('in:inbox')}`,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=${encodeURIComponent(GMAIL_QUERY)}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (listRes.status === 401) throw new Error('TOKEN_EXPIRED');

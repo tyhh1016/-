@@ -51,14 +51,17 @@ const normalizeApp = (raw) => {
 export const fetchSheetMessages = async (token, sheetId) => {
   if (!sheetId) throw new Error('未設定 VITE_SHEET_ID');
 
-  const range  = encodeURIComponent('A2:E2000');  // 不指定工作表名稱，自動使用第一張（避免中文預設名稱 400 錯誤）
-  const url    = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}`;
+  // 不指定工作表名稱 → Sheets API 自動使用第一張工作表
+  // 不用 encodeURIComponent 包整個範圍，直接放在路徑中更穩定
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A2:E2000`;
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   if (res.status === 401) throw new Error('TOKEN_EXPIRED');
+  if (res.status === 403) throw new Error('Sheets API 403：請確認 Google Sheets 已分享給此帳號，或試算表 ID 正確');
+  if (res.status === 404) throw new Error('Sheets API 404：試算表 ID 不正確或試算表已被刪除');
   if (!res.ok) throw new Error(`Sheets API ${res.status}`);
 
   const { values = [] } = await res.json();
